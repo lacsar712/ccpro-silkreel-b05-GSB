@@ -105,14 +105,6 @@ function Yard() {
           <h1>{board.filature}</h1>
           <p>{board.riverside} · 点盆登记汤温；已缫完须最近汤温 38～42℃</p>
         </div>
-        <button
-          onClick={() => {
-            clearToken();
-            location.reload();
-          }}
-        >
-          退出
-        </button>
       </div>
       <div class="ring">
         {board.basins.map((b, i) => {
@@ -152,9 +144,131 @@ function Yard() {
   );
 }
 
+function IntervalPage({ me }) {
+  const [info, setInfo] = useState(null);
+  const [minutes, setMinutes] = useState("5");
+  const [err, setErr] = useState("");
+  const [ok, setOk] = useState("");
+  const isAdmin = me && me.role === "admin";
+
+  async function refresh(init = false) {
+    const data = await api("/api/settings/interval");
+    setInfo(data);
+    if (init) setMinutes(String(data.minIntervalMinutes));
+  }
+
+  useEffect(() => {
+    refresh(true).catch((e) => setErr(e.message));
+    const timer = setInterval(() => refresh().catch(() => {}), 5000);
+    return () => clearInterval(timer);
+  }, []);
+
+  async function save(e) {
+    e.preventDefault();
+    setErr("");
+    setOk("");
+    try {
+      const data = await api("/api/settings/interval", {
+        method: "PUT",
+        body: JSON.stringify({ minIntervalMinutes: Number(minutes) }),
+      });
+      setOk(`已保存：最小间隔 ${data.minIntervalMinutes} 分钟`);
+      await refresh();
+    } catch (ex) {
+      setErr(ex.message);
+    }
+  }
+
+  if (!info) {
+    return <div class="yard">{err || "装载间隔…"}</div>;
+  }
+
+  return (
+    <div class="yard">
+      <h1>汤温间隔</h1>
+      <p>
+        当前最小间隔：<strong>{info.minIntervalMinutes}</strong> 分钟（至少 5）
+      </p>
+      {me === null ? null : isAdmin ? (
+        <form class="interval-form" onSubmit={save}>
+          <label>
+            最小间隔分钟
+            <input
+              type="number"
+              min="5"
+              step="1"
+              value={minutes}
+              onInput={(e) => setMinutes(e.target.value)}
+            />
+          </label>
+          <button type="submit">保存</button>
+        </form>
+      ) : (
+        <p class="hint">缫丝工只能查看间隔数字，改间隔请找管理员。</p>
+      )}
+      {ok && <p class="ok">{ok}</p>}
+      {err && <p class="err">{err}</p>}
+      <table class="interval-table">
+        <thead>
+          <tr>
+            <th>盆位</th>
+            <th>上次登记</th>
+            <th>还需等待（秒）</th>
+          </tr>
+        </thead>
+        <tbody>
+          {info.basins.map((b) => (
+            <tr key={b.id}>
+              <td>{b.code}</td>
+              <td>{b.lastTakenAt ? new Date(b.lastTakenAt).toLocaleString() : "无"}</td>
+              <td>{b.waitSeconds > 0 ? b.waitSeconds : "可登记"}</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  );
+}
+
 function App() {
   const [ready, setReady] = useState(Boolean(token()));
-  return ready ? <Yard /> : <Login onOk={() => setReady(true)} />;
+  const [page, setPage] = useState("yard");
+  const [me, setMe] = useState(null);
+
+  useEffect(() => {
+    if (ready) {
+      api("/api/auth/me")
+        .then(setMe)
+        .catch(() => setMe(null));
+    }
+  }, [ready]);
+
+  if (!ready) {
+    return <Login onOk={() => setReady(true)} />;
+  }
+
+  return (
+    <div>
+      <nav class="topnav">
+        <button class={page === "yard" ? "on" : ""} onClick={() => setPage("yard")}>
+          环盆作业台
+        </button>
+        <button class={page === "interval" ? "on" : ""} onClick={() => setPage("interval")}>
+          汤温间隔
+        </button>
+        <span class="spacer" />
+        <button
+          onClick={() => {
+            clearToken();
+            location.reload();
+          }}
+        >
+          退出
+        </button>
+      </nav>
+      {page === "yard" ? <Yard /> : <IntervalPage me={me} />}
+    </div>
+  );
 }
 
 render(<App />, document.getElementById("app"));

@@ -2,7 +2,7 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
-from app.models import Basin, BathReading, Filature, User
+from app.models import Basin, BathReading, Filature, Setting, User
 
 
 class UserRepo:
@@ -12,6 +12,24 @@ class UserRepo:
     async def by_username(self, username: str) -> User | None:
         result = await self.session.execute(select(User).where(User.username == username))
         return result.scalar_one_or_none()
+
+
+class SettingRepo:
+    def __init__(self, session: AsyncSession):
+        self.session = session
+
+    async def get_value(self, key: str) -> str | None:
+        row = await self.session.get(Setting, key)
+        return row.value if row else None
+
+    async def set_value(self, key: str, value: str) -> None:
+        row = await self.session.get(Setting, key)
+        if row is None:
+            row = Setting(key=key, value=value)
+            self.session.add(row)
+        else:
+            row.value = value
+        await self.session.commit()
 
 
 class BasinRepo:

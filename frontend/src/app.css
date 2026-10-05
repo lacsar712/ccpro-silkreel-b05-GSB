@@ -52,12 +52,51 @@ h1 { font-weight: 600; letter-spacing: 0.08em; }
   padding: 16px 18px;
   border-radius: 12px;
 }
+.panel {
+  background: #fff;
+  border: 1px solid #e4d8bf;
+  padding: 20px 22px;
+  border-radius: 12px;
+  max-width: 520px;
+}
+.bignum {
+  font-size: 56px;
+  margin: 8px 0;
+}
+.bignum span {
+  font-size: 18px;
+  color: #6b5a48;
+}
 button, input {
   font: inherit;
   padding: 8px 12px;
   margin: 4px 6px 4px 0;
 }
 .err { color: #b42318; }
+.ok { color: #2f6f3e; }
 .hint { color: #6b5a48; font-size: 0.92em; }
 label { display: block; margin: 8px 0; }
-.topbar { display: flex; justify-content: space-between; align-items: baseline; }
+.topbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.nav {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+.nav button.on {
+  background: var(--ink);
+  color: #fff;
+  border-radius: 8px;
+}
+.who {
+  color: #6b5a48;
+  margin: 0 6px;
+  font-size: 0.92em;
+}
+.yardhead p { color: #6b5a48; }

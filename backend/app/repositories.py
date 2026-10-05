@@ -2,7 +2,7 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
-from app.models import Basin, BathReading, Filature, User
+from app.models import MIN_INTERVAL_KEY, Basin, BathReading, Filature, Setting, User
 
 
 class UserRepo:
@@ -43,4 +43,22 @@ class BasinRepo:
 
     async def save_status(self, basin: Basin, status: str) -> None:
         basin.status = status
+        await self.session.commit()
+
+
+class SettingsRepo:
+    def __init__(self, session: AsyncSession):
+        self.session = session
+
+    async def min_interval_raw(self) -> str | None:
+        row = await self.session.get(Setting, MIN_INTERVAL_KEY)
+        return row.value if row else None
+
+    async def save_min_interval(self, minutes: int) -> None:
+        row = await self.session.get(Setting, MIN_INTERVAL_KEY)
+        if row is None:
+            row = Setting(key=MIN_INTERVAL_KEY, value=str(minutes))
+            self.session.add(row)
+        else:
+            row.value = str(minutes)
         await self.session.commit()

@@ -3,7 +3,16 @@ from datetime import timedelta
 from sqlalchemy import select
 
 from app.db import SessionLocal
-from app.models import Basin, BathReading, Filature, User, utcnow
+from app.models import (
+    DEFAULT_MIN_INTERVAL_MINUTES,
+    MIN_INTERVAL_KEY,
+    Basin,
+    BathReading,
+    Filature,
+    Setting,
+    User,
+    utcnow,
+)
 from app.security import hash_password
 
 
@@ -25,6 +34,15 @@ async def seed_demo() -> None:
         else:
             worker.password_hash = hash_password("123456")
             worker.role = "worker"
+
+        setting = await session.get(Setting, MIN_INTERVAL_KEY)
+        if setting is None:
+            session.add(
+                Setting(
+                    key=MIN_INTERVAL_KEY,
+                    value=str(DEFAULT_MIN_INTERVAL_MINUTES),
+                )
+            )
 
         mill = (await session.execute(select(Filature))).scalars().first()
         if mill:
